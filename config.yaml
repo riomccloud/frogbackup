@@ -1,0 +1,19 @@
+# IMPORTANT!
+#
+# If you are using Windows, replace inverted slashes with NORMAL SLASHES when configuring directories!
+# If you keep inverted slashes, FrogBackup will NOT WORK.
+#
+# Check the documentation for more info.
+
+programSettings:
+  language: "en"
+
+backupLocations:
+  - name: "Example"
+    localPath: "C:/Path/To/Folder"
+    remotePath: "D:/Path/To/Folder" # you can also use Rclone paths like rclone:example:folder
+    maxSnapshots: 10    # set to 0 to disable deleting old snapshots
+    exclude:
+      - "example.txt"
+    tags:
+      - "example"

@@ -1,0 +1,183 @@
+# Portuguese translations for PACKAGE package.
+# Copyright (C) 2024 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Rio McCloud <riomccloud@disroot.org>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-11 17:57-0300\n"
+"PO-Revision-Date: 2024-08-11 17:58-0300\n"
+"Last-Translator: Rio McCloud <riomccloud@disroot.org>\n"
+"Language-Team: Brazilian Portuguese <ldpbr-translation@lists.sourceforge."
+"net>\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 3.4.2\n"
+"X-Poedit-Basepath: ../../..\n"
+"X-Poedit-SearchPath-0: frogbackup.py\n"
+
+#: frogbackup.py:56
+msgid "[ERROR] The following fields are blank or missing in 'config.yaml':"
+msgstr "[ERRO] Os campos a seguir estão vazios ou ausentes no 'config.yaml':"
+
+#: frogbackup.py:56
+msgid "Check them and try again."
+msgstr "Cheque-os e tente novamente."
+
+#: frogbackup.py:82
+msgid "Stage"
+msgstr "Estágio"
+
+#: frogbackup.py:82
+msgid "of"
+msgstr "de"
+
+#: frogbackup.py:83
+msgid "The utility will now backup"
+msgstr "O utilitário irá fazer becape de"
+
+#: frogbackup.py:84
+msgid "If the data below is correct, you shall proceed."
+msgstr "Se os dados a seguir estão corretos, você pode prosseguir."
+
+#: frogbackup.py:85
+msgid "LOCAL PATH:"
+msgstr "CAMINHO LOCAL:"
+
+#: frogbackup.py:86
+msgid "REMOTE PATH:"
+msgstr "CAMINHO REMOTO:"
+
+#: frogbackup.py:87
+msgid "MAX SNAPSHOTS:"
+msgstr "MÁX. SNAPSHOTS:"
+
+#: frogbackup.py:92
+msgid "EXCLUDE: "
+msgstr "EXCLUIR: "
+
+#: frogbackup.py:97
+msgid "TAGS: "
+msgstr "ETIQUETAS: "
+
+#: frogbackup.py:108
+msgid "Enter your Restic's repository password: "
+msgstr "Digite sua senha do repositório do Restic: "
+
+#: frogbackup.py:113
+msgid "Please enter your password to continue. Blank inputs are invalid."
+msgstr ""
+"Por favor, digite sua senha para continuar. Entradas vazias são inválidas."
+
+#: frogbackup.py:121
+msgid "STEP 1: Keeping the last"
+msgstr "ETAPA 1: Mantendo os últimos"
+
+#: frogbackup.py:121
+msgid "snapshots, deleting the rest..."
+msgstr "snapshots, apagando o resto..."
+
+#: frogbackup.py:154
+msgid ""
+"[INFO] Skiping this step since the repository is configured to not delete "
+"old snapshots."
+msgstr ""
+"[INFO] Pulando essa etapa pois o repositório está configurado para não "
+"apagar snapshots antigos."
+
+#: frogbackup.py:158
+msgid "STEP 2: Backing up files to the remote path..."
+msgstr "ETAPA 2: Fazendo becape dos arquivos para o caminho remoto..."
+
+#: frogbackup.py:199
+msgid "[ERROR] The password you entered is incorrect."
+msgstr "[ERRO] A senha digitada está incorreta."
+
+#: frogbackup.py:200 frogbackup.py:330
+msgid "Press Enter to restart this backup stage..."
+msgstr "Pressione Enter para reiniciar esse estágio de becape..."
+
+#: frogbackup.py:205
+msgid "STEP 3: Listing differences between the two latest snapshots..."
+msgstr "ETAPA 3: Listando diferenças entre os dois últimos snapshots..."
+
+#: frogbackup.py:222
+msgid ""
+"[INFO] The repository contains a single snapshot. Therefore, the utility "
+"will not try to compare snapshots."
+msgstr ""
+"[INFO] O repositorio contém apenas um snapshot. Por isso, o utilitário não "
+"tentará comparar snapshots."
+
+#: frogbackup.py:254
+msgid "BACKUP FINISHED!"
+msgstr "BECAPE FINALIZADO!"
+
+#: frogbackup.py:256
+msgid ""
+"Please confirm if the entire process ran correctly reading the output above."
+msgstr "Por favor, confirme se todo o processo correu bem lendo a saída acima."
+
+#: frogbackup.py:262
+msgid "Was the backup successful (Y/N)? "
+msgstr "O becape foi bem sucedido (S/N)? "
+
+#: frogbackup.py:268 frogbackup.py:291
+msgid "Invalid input. Please type Y (Yes) or N (No)."
+msgstr "Entrada inválida. Por favor digite S (Sim) ou N (Não)."
+
+#: frogbackup.py:275
+msgid "Ok, take your time to fix what needs to be fixed."
+msgstr "Certo, tome seu tempo para corrigir o que precisa ser corrigido."
+
+#: frogbackup.py:276
+msgid "When done, continue following the questions below."
+msgstr "Quando concluído, continue seguindo as questões abaixo."
+
+#: frogbackup.py:284
+msgid "CAUTION: Do you want to delete the latest snapshot (Y/N)?"
+msgstr "CUIDADO: Você deseja apagar o snapshot mais recente (S/N)?"
+
+#: frogbackup.py:285
+msgid "This is useful only if Restic was able to create one moments ago. "
+msgstr "Isso é útil apenas se o Restic foi capaz de criar um momentos atrás. "
+
+#: frogbackup.py:297
+msgid "EXTRA STEP: Deleting the latest snapshot..."
+msgstr "ETAPA EXTRA: Apagando o snapshot mais recente..."
+
+#: frogbackup.py:326
+msgid "LATEST SNAPSHOT DELETED!"
+msgstr "O SNAPSHOT MAIS RECENTE FOI APAGADO!"
+
+#: frogbackup.py:328
+msgid "Read the output above to confirm that the changes were successful."
+msgstr ""
+"Leia a saída acima para confirmar que as alterações foram bem sucedidas."
+
+#: frogbackup.py:340
+msgid ""
+"Welcome to FrogBackup! The utility has loaded, passed\n"
+"the initial checks and is ready to start."
+msgstr ""
+"Bem-vindo(a) ao FrogBackup! O utilitário foi carregado,\n"
+"passou os testes iniciais e está pronto para começar."
+
+#: frogbackup.py:343
+msgid "Press Enter to continue..."
+msgstr "Pressione Enter para continuar..."
+
+#: frogbackup.py:354
+msgid "The utility is now exiting. Thanks for using FrogBackup!"
+msgstr ""
+"O utilitário está sendo encerrado. Obrigado por usar\n"
+"o FrogBackup!"
+
+#: frogbackup.py:358
+msgid "Press Enter to exit..."
+msgstr "Pressione Enter para sair..."
