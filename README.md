@@ -11,12 +11,13 @@ Small TUI frontend for [Restic](https://github.com/restic/restic) with (or witho
 - Backup files and folders, and display changes between the two last snapshots
 - Quick option to delete latest snapshot and restart task, if anything goes wrong
 - Supports multiple backup tasks (one at a time)
+- Supports multiple languages
 - Supports pruning old snapshots (configurable value)
 
 ## Installation and use
-Download the package for your operating system under [Releases](https://github.com/riomccloud/frogbackup/releases/latest). Extract and edit the `config.yaml` file according to your needs. It's also a template, just follow it.
+Download the package for your operating system under [Releases](https://github.com/riomccloud/frogbackup/releases/latest). Extract and edit the `config.yaml` file according to your needs. It's also a template, just follow it. Of course, you need Restic (and Rclone, if you want to use it alongside Restic) installed and in the enviroment variables.
 
-Of course, you need Restic (and Rclone, if you want to use it alongside Restic) installed and in the enviroment variables.
+At the moment, FrogBackup supports English (en) and Brazilian Portuguese (pt_BR) languages.
 
 ## Building
 The versions in Releases were made using [PyInstaller](https://pyinstaller.org), without custom arguments, except for the custom icon. You can also use FrogBackup in its original .py format, but you need to install the dependencies listed in the beginning of the Python file.
