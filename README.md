@@ -10,6 +10,8 @@ Small TUI frontend for [Restic](https://github.com/restic/restic) with (or witho
 ## Features
 - Backup files and folders, and display changes between the two last snapshots
 - Quick option to delete latest snapshot and restart task, if anything goes wrong
+- Multiple snapshot grouping selectors
+- Supports checking repository integrity (configurable)
 - Supports multiple backup tasks (one at a time)
 - Supports multiple languages
 - Supports pruning old snapshots (configurable value)
