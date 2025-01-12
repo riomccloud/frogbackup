@@ -1,6 +1,6 @@
 # IMPORTANT!
 #
-# If you are using Windows, replace inverted slashes with NORMAL SLASHES when configuring directories!
+# If you are using Windows, replace inverted slashes with NORMAL SLASHES or DOUBLE INVERTED SLASHES when configuring directories!
 # If you keep inverted slashes, FrogBackup will NOT WORK.
 #
 # Check the documentation for more info.
@@ -10,9 +10,12 @@ programSettings:
 
 backupLocations:
   - name: "Example"
-    localPath: "C:/Path/To/Folder"
-    remotePath: "D:/Path/To/Folder" # you can also use Rclone paths like rclone:example:folder
-    maxSnapshots: 10    # set to 0 to disable deleting old snapshots
+    localPath: "C:/LocalPath"
+    remotePath: "D:/RemotePath" # you can also use Rclone paths like rclone:example:folder
+    maxSnapshots: 10 # set to 0 to disable deleting old snapshots
+    checkIntegrity: 1 # values: 0 - disabled; 1 - enabled, only 'check'; 2 - enabled, 'check --read-data'; 3 - enabled, 'check --read-data-subset <value>' - more info at Restic's docs
+    readDataSubset: "10%" # only used when checkIntegrity is 3, you can leave it at 0 if not going to use it - more info at Restic's docs
+    groupBy: "tags" # set to 'default' to use Restic's default settings - more info at Restic's docs
     exclude:
       - "example.txt"
     tags:

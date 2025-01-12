@@ -1,17 +1,37 @@
 import getpass				# Hidden text inputs
 import gettext				# Internationalization
 import os					# Manage files
-import subprocess   		# Run shell commands
+import subprocess			# Run shell commands
 import sys					# System exit
-import yaml         		# Load the config file
+import yaml					# Load the config file
 
 # Check config.yaml file and load it
 def initialChecks():
-	# Try to load config.yaml file, stop if not found
+	# Try to load config.yaml file, stop if there's errors
 	try:
 		config = yaml.safe_load(open("config.yaml", "r", encoding="utf-8"))
-	except:
+	except FileNotFoundError:
 		print("[ERROR] 'config.yaml' was not found. Check it and try again." "\n")
+		input("Press Enter to exit...")
+		sys.exit(1)
+	except yaml.YAMLError as e:
+		print(
+			"[ERROR] 'config.yaml' is not formatted correctly:" "\n\n"
+			f"{e}"
+			"\n\n"
+			"Check it and try again." "\n"
+		)
+		input(
+			"Press Enter to exit..."
+		)
+		sys.exit(1)
+	except Exception as e:
+		print(
+			"[ERROR] Unknown error:" "\n\n"
+			f"{e}"
+			"\n\n"
+			"Check it and try again." "\n"
+		)
 		input("Press Enter to exit...")
 		sys.exit(1)
 
@@ -25,9 +45,9 @@ def initialChecks():
 		# If the configured language is English, fallback to the script's text
 		if configuredLanguage == "en":
 			translation = gettext.NullTranslations()
-		# Else, load the translation files, fallback if doesn't exist
-		else:
-			translation = gettext.translation("frogbackup", localedir=languageDir, languages=[configuredLanguage], fallback=True)
+		# Else, load the translation files
+		elif configuredLanguage == "pt_BR":
+			translation = gettext.translation("frogbackup", localedir=languageDir, languages=[configuredLanguage])
 
 		# Install GetText translation
 		translation.install()
@@ -35,7 +55,9 @@ def initialChecks():
 		# Set _ var here otherwise the script breaks in fallback mode
 		global _
 		_ = gettext.gettext
-		print("[WARNING] Language is not configured on 'config.yaml'. Falling back to English." "\n")
+		print(
+			"[WARNING] Language configured in 'config.yaml' is not supported or is not configured. Falling back to English." "\n"
+		)
 
 	# Create a list for possible missing/blank lines in config.yaml
 	errors = []
@@ -50,12 +72,24 @@ def initialChecks():
 			errors.append(f"localPath (block {blockCounter})")
 		if not backupEntryLine.get("remotePath"):
 			errors.append(f"remotePath (block {blockCounter})")
+		# Tip: other conditions check if the value is false, 0, empty; this one only checks for the line to exist, since 0 is a valid value
 		if backupEntryLine.get("maxSnapshots") is None:
 			errors.append(f"maxSnapshots (block {blockCounter})")
+		if backupEntryLine.get("checkIntegrity") not in [0, 1, 2, 3]:
+			errors.append(f"checkIntegrity (block {blockCounter})")
+		# readDataSubset depends on checkIntegrity
+		if not backupEntryLine.get("checkIntegrity") is None and not backupEntryLine.get("readDataSubset"):
+			errors.append(f"readDataSubset (block {blockCounter})")
+		if not backupEntryLine.get("groupBy"):
+			errors.append(f"groupBy (block {blockCounter})")
 	if errors:
-		print(_("[ERROR] The following fields are blank or missing in 'config.yaml':") + f" {', '.join(errors)}.\n" + _("Check them and try again."))
+		print(
+			_("[ERROR] The following fields are blank or missing in 'config.yaml':") + f" {', '.join(errors)}." + "\n" +
+			_("Check them and try again.")
+		)
 		sys.exit(1)
-		
+
+	# Returns the configured values to be used
 	return config
 
 # Start backing up files
@@ -69,6 +103,7 @@ def backupFiles(config):
 	# Copy the enviroment variables of the system to a var, since we'll add a new var later
 	enviromentVars = os.environ.copy()
 
+	# For each backup entry on the config file
 	for backupEntryLine in config.get("backupLocations", []):
 		# Increase the backup counter
 		backupCounter += 1
@@ -77,14 +112,18 @@ def backupFiles(config):
 			# Clear the screen content
 			os.system("cls" if os.name == "nt" else "clear")
 
+			# Print the configuration
 			print(
 				"==================================================" "\n\n"
-				"FROGBACKUP v2.0 - " + _("Stage") + f" {backupCounter} " + _("of") + f" {backupEntriesNumber}" + "\n\n" +
+				"FROGBACKUP v2.1 - " + _("Stage") + f" {backupCounter} " + _("of") + f" {backupEntriesNumber}" + "\n\n" +
 				_("The utility will now backup") + f" '{backupEntryLine.get('name')}'." "\n" +
 				_("If the data below is correct, you shall proceed.") + "\n\n" +
 				_("LOCAL PATH:") + f" '{backupEntryLine.get('localPath')}'" "\n" +
 				_("REMOTE PATH:") + f" '{backupEntryLine.get('remotePath')}'" "\n" +
-				_("MAX SNAPSHOTS:") + f" {backupEntryLine.get('maxSnapshots')}")
+				_("MAX SNAPSHOTS:") + f" {backupEntryLine.get('maxSnapshots')}" "\n" +
+				_("CHECK INTEGRITY:") + f" {backupEntryLine.get('checkIntegrity')}" "\n" +
+				_("READ DATA SUBSET:") + f" {backupEntryLine.get('readDataSubset')}" "\n" +
+				_("GROUP BY:") + f" '{backupEntryLine.get('groupBy')}'")
 			
 			# If there are exclusions configured, display them
 			if backupEntryLine.get("exclude"):
@@ -110,16 +149,111 @@ def backupFiles(config):
 
 				# Check if user typed a valid password
 				if not enviromentVars["RESTIC_PASSWORD"]:
-					print("\n" + _("Please enter your password to continue. Blank inputs are invalid."))
+					print(
+						"\n" +
+						_("Please enter your password to continue. Blank inputs are invalid.")
+					)
 				else:
 					break
 
 			# Clear the screen content
 			os.system("cls" if os.name == "nt" else "clear")
-
+			
+			# Check repository's integrity as configured in the settings file
 			print(
-				_("STEP 1: Keeping the last") + f" {backupEntryLine.get('maxSnapshots')} " + _("snapshots, deleting the rest...") + "\n"
-				"--------------------------------------------------" "\n"
+				_("STEP 1: Checking repository's integrity...") + "\n"
+				"==================================================" "\n"
+			)
+			
+			# Check if repository's integrity check is enabled
+			if backupEntryLine.get("checkIntegrity") != 0:
+				# Sets the Restic command to check integrity
+				checkRepositoryIntegrityCommand = [
+					"restic",
+					"-r", backupEntryLine.get("remotePath")
+				]
+				
+				# Select the correct command based in the settings file
+				if backupEntryLine.get("checkIntegrity") == 1:
+					checkRepositoryIntegrityCommand.append("check")
+				elif backupEntryLine.get("checkIntegrity") == 2:
+					checkRepositoryIntegrityCommand.extend([
+						"check",
+						"--read-data"
+					])
+				elif backupEntryLine.get("checkIntegrity") == 3:
+					checkRepositoryIntegrityCommand.extend([
+						"check",
+						"--read-data-subset",
+						str(backupEntryLine.get("readDataSubset"))
+					])
+
+				# Run command to check for repository's integrity and get its output
+				checkRepositoryIntegrityOutput = subprocess.Popen(
+					checkRepositoryIntegrityCommand,
+					encoding="UTF-8",
+					env=enviromentVars,
+					stderr=subprocess.PIPE,
+					stdout=None
+				)
+
+				# Wait for the command to finish
+				checkRepositoryIntegrityOutput.wait()
+
+				# If there were errors, display them
+				checkRepositoryIntegrityOutputErrors = checkRepositoryIntegrityOutput.stderr.read()
+				if checkRepositoryIntegrityOutputErrors:
+					print(checkRepositoryIntegrityOutputErrors)
+
+				# Check if password is wrong, if true warns user and return to the beginning of the loop
+				if "wrong password" in checkRepositoryIntegrityOutputErrors:
+					print(_("[ERROR] The password you entered is incorrect.") + "\n")
+					input(_("Press Enter to restart this backup stage..."))
+					continue
+
+				# Finish the integrity check process
+				print(
+					"\n" +
+					_("INTEGRITY CHECK FINISHED!") + "\n"
+					"==================================================" "\n\n" +
+					_("Please confirm if the repository is healthy reading the output above.")
+				)
+
+				# Loop to keep the question if users' input is invalid
+				while True:
+					# Ask if integrity is Ok
+					isIntegrityOk = input(_("Is the repository healthy (Y/N)? ")).strip().lower()
+
+					# Yes and No, other letters represent these two words in different languages
+					if isIntegrityOk in ["y", "s", "n"]:
+						break
+					else:
+						print(
+							"\n" +
+							_("Invalid input. Please type Y (Yes) or N (No).")
+						)
+				
+				# If integrity is not Ok, warn the user
+				if not isIntegrityOk in ["y", "s"]:
+					print(
+						"\n" +
+						_("Well, that's no good. =(") + "\n" +
+						_("Check Restic's docs to proceed in trying to repair this repository.") + "\n" +
+						_("FrogBackup will close. If you need help, contact your system's administrator.") + "\n" +
+						_('As a wise penguin once said: "Bailing out, you are on your own. Good luck."') + "\n"
+					)
+					
+					# Exit with error code
+					input(_("Press Enter to exit..."))
+					sys.exit(1)
+			else:
+				print(_("[INFO] Skiping this step since the repository is configured to not check its integrity."))
+
+			# Delete old snapshots as configured in the settings file
+			print(
+				"\n" +
+				_("STEP 2: Keeping the last") + f" {backupEntryLine.get('maxSnapshots')} " + _("snapshots, deleting the rest...") + "\n"
+				"==================================================" "\n"
 			)
 
 			# Delete old snapshots if configured to do so
@@ -132,32 +266,34 @@ def backupFiles(config):
 					"--keep-last", str(backupEntryLine.get("maxSnapshots")),
 					"--prune"
 				]
-				deleteOldSnapshotsOutput = subprocess.Popen(deleteOldSnapshotsCommand, encoding="UTF-8", env=enviromentVars, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-
-				# Display its output in real time
-				for line in deleteOldSnapshotsOutput.stdout:
-					print(line, end="")
 				
+				# If groupBy is configured, extend it (append doesn't work)
+				if backupEntryLine.get("groupBy") and backupEntryLine.get("groupBy") != "default":
+					deleteOldSnapshotsCommand.extend(["--group-by", str(backupEntryLine.get("groupBy"))])
+				
+				# Run the command
+				deleteOldSnapshotsOutput = subprocess.Popen(
+					deleteOldSnapshotsCommand,
+					encoding="UTF-8",
+					env=enviromentVars,
+					stderr=None,
+					stdout=None
+				)
+
 				# Wait for the command to finish
 				deleteOldSnapshotsOutput.wait()
-
-				# If there were errors, display them
-				deleteOldSnapshotsOutputErrors = deleteOldSnapshotsOutput.stderr.read()
-				if deleteOldSnapshotsOutputErrors:
-					print(deleteOldSnapshotsOutputErrors)
-				else:
-					# Print blank line to get correct spacing, only happens with stdout
-					print()
-
 			# If not configured, inform the user that this step will be skiped
 			else:
-				print(_("[INFO] Skiping this step since the repository is configured to not delete old snapshots.") + "\n")
+				print(_("[INFO] Skiping this step since the repository is not configured to delete old snapshots."))
 
 			# Backup files
 			print(
-				_("STEP 2: Backing up files to the remote path...") + "\n"
-				"--------------------------------------------------" "\n"
+				"\n" +
+				_("STEP 3: Backing up files to the remote path...") + "\n"
+				"==================================================" "\n"
 			)
+			
+			# Set the command
 			backupCommand = [
 				"restic",
 				"-r", backupEntryLine.get("remotePath"),
@@ -178,33 +314,23 @@ def backupFiles(config):
 					backupCommand.append(excludeEntry)
 			
 			# Run the Restic command to backup files
-			backupOutput = subprocess.Popen(backupCommand, cwd=backupEntryLine.get("localPath"), encoding="UTF-8", env=enviromentVars, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+			backupOutput = subprocess.Popen(
+				backupCommand,
+				cwd=backupEntryLine.get("localPath"),
+				encoding="UTF-8",
+				env=enviromentVars,
+				stderr=None,
+				stdout=None
+			)
 
-			# Display its output in real time
-			for line in backupOutput.stdout:
-				print(line, end="")
-			
 			# Wait for the command to finish
 			backupOutput.wait()
 
-			# If there were errors, display them
-			backupOutputErrors = backupOutput.stderr.read()
-			if backupOutputErrors:
-				print(backupOutputErrors)
-			else:
-				# Print blank line to get correct spacing, only happens with stdout
-				print()
-
-			# Check if password is wrong, if true warns user and return to the beginning of the loop
-			if "wrong password" in backupOutputErrors:
-				print(_("[ERROR] The password you entered is incorrect.") + "\n")
-				input(_("Press Enter to restart this backup stage..."))
-				continue
-
 			# Show differences between snapshots
 			print(
-				_("STEP 3: Listing differences between the two latest snapshots...") + "\n"
-				"--------------------------------------------------" "\n"
+				"\n" +
+				_("STEP 4: Listing differences between the two latest snapshots...") + "\n"
+				"==================================================" "\n"
 			)
 
 			# Run the Restic command that lists snapshots
@@ -213,14 +339,26 @@ def backupFiles(config):
 				"-r", backupEntryLine.get("remotePath"),
 				"snapshots"
 			]
-			listSnapshotsOutput = subprocess.run(listSnapshotsCommand, capture_output=True, encoding="UTF-8", env=enviromentVars, text=True)
+			
+			# If groupBy variable is configured, append it to the command
+			if backupEntryLine.get("groupBy") and backupEntryLine.get("groupBy") != "default":
+				listSnapshotsCommand.extend(["--group-by", str(backupEntryLine.get("groupBy"))])
+			
+			# Run the command
+			listSnapshotsOutput = subprocess.run(
+				listSnapshotsCommand,
+				capture_output=True,
+				encoding="UTF-8",
+				env=enviromentVars,
+				text=True
+			)
 
 			# Separate the output of the command in lines, reversed
 			dividedOutput = list(reversed(listSnapshotsOutput.stdout.splitlines()))
 
 			# Check if the repository has only one snapshot - if true, don't compare snapshots
 			if not any(char.isdigit() for char in dividedOutput[3]):
-				print(_("[INFO] The repository contains a single snapshot. Therefore, the utility will not try to compare snapshots.") + "\n")
+				print(_("[INFO] The repository contains a single snapshot. Therefore, the utility will not try to compare snapshots."))
 			else:
 				# Get the IDs of the two latest snapshots
 				latestSnapshotID, penultimateSnapshotID = dividedOutput[2][:8], dividedOutput[3][:8]
@@ -233,27 +371,23 @@ def backupFiles(config):
 					penultimateSnapshotID,
 					latestSnapshotID
 				]
-				lastSnapshotsDiffOutput = subprocess.Popen(lastSnapshotsDiffCommand, encoding="UTF-8", env=enviromentVars, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
-				# Display its output in real time
-				for line in lastSnapshotsDiffOutput.stdout:
-					print(line, end="")
+				lastSnapshotsDiffOutput = subprocess.Popen(
+					lastSnapshotsDiffCommand,
+					encoding="UTF-8",
+					env=enviromentVars,
+					stderr=None,
+					stdout=None
+				)
 				
 				# Wait for the command to finish
 				lastSnapshotsDiffOutput.wait()
-
-				# If there were errors, display them
-				lastSnapshotsDiffOutputErrors = lastSnapshotsDiffOutput.stderr.read()
-				if lastSnapshotsDiffOutputErrors:
-					print(lastSnapshotsDiffOutputErrors)
-				else:
-					# Print blank line to get correct spacing, only happens with stdout
-					print()
 			
 			# Finish the backup process
 			print(
+				"\n" +
 				_("BACKUP FINISHED!") + "\n"
-				"--------------------------------------------------" "\n\n" +
+				"==================================================" "\n\n" +
 				_("Please confirm if the entire process ran correctly reading the output above.")
 			)
 
@@ -266,14 +400,18 @@ def backupFiles(config):
 				if isBackupSuccessful in ["y", "s", "n"]:
 					break
 				else:
-					print("\n" + _("Invalid input. Please type Y (Yes) or N (No)."))
+					print(
+						"\n" +
+						_("Invalid input. Please type Y (Yes) or N (No).")
+					)
 			
 			# If backup ran correctly, continue to the next one
 			if isBackupSuccessful in ["y", "s"]:
 				break
 			else:
 				print(
-					"\n" + _("Ok, take your time to fix what needs to be fixed.") + "\n" +
+					"\n" +
+					_("Ok, take your time to fix what needs to be fixed.") + "\n" +
 					_("When done, continue following the questions below.") + "\n"
 				)
 
@@ -283,22 +421,28 @@ def backupFiles(config):
 					# Useful if Restic was able to create one, but something went wrong (example: data rot noticed on snapshot differences)
 					doDeleteLatestSnapshot = input(
 						_("CAUTION: Do you want to delete the latest snapshot (Y/N)?") + "\n" +
-						_("This is useful only if Restic was able to create one moments ago. ")
+						_("This is useful only if Restic was able to create one in step 3. ")
 					).strip().lower()
 
+					# Check for invalid input
 					if doDeleteLatestSnapshot in ["y", "s", "n"]:
 						break
 					else:
-						print("\n" + _("Invalid input. Please type Y (Yes) or N (No)."))
+						print(
+							"\n" +
+							_("Invalid input. Please type Y (Yes) or N (No).")
+						)
 				
 				# If user wants to delete the latest snapshot, do it
 				if doDeleteLatestSnapshot in ["y", "s"]:
 					# Delete latest snapshot
 					print(
-						"\n" + _("EXTRA STEP: Deleting the latest snapshot...") + "\n"
-						"--------------------------------------------------" "\n"
+						"\n" +
+						_("EXTRA STEP: Deleting the latest snapshot...") + "\n"
+						"==================================================" "\n"
 					)
 
+					# Run the command to delete the latest snapshot
 					deleteLatestSnapshotCommand = [
 						"restic",
 						"-r", backupEntryLine.get("remotePath"),
@@ -306,26 +450,22 @@ def backupFiles(config):
 						"--prune"
 					]
 
-					deleteLatestSnapshotOutput = subprocess.Popen(deleteLatestSnapshotCommand, encoding="UTF-8", env=enviromentVars, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+					# Get its output
+					deleteLatestSnapshotOutput = subprocess.Popen(
+						deleteLatestSnapshotCommand,
+						encoding="UTF-8",
+						env=enviromentVars,
+						stderr=None,
+						stdout=None
+					)
 
-					# Display its output in real time
-					for line in deleteLatestSnapshotOutput.stdout:
-						print(line, end="")
-					
-					# Wait for the command to finish
+					# Wait to the program to finish
 					deleteLatestSnapshotOutput.wait()
 
-					# If there were errors, display them
-					deleteLatestSnapshotOutputErrors = deleteLatestSnapshotOutput.stderr.read()
-					if deleteLatestSnapshotOutputErrors:
-						print(deleteLatestSnapshotOutputErrors)
-					else:
-						# Print blank line to get correct spacing, only happens with stdout
-						print()
-
 					print(
+						"\n" +
 						_("LATEST SNAPSHOT DELETED!") + "\n"
-						"--------------------------------------------------" "\n\n" +
+						"==================================================" "\n\n" +
 						_("Read the output above to confirm that the changes were successful.") + "\n"
 					)
 					input(_("Press Enter to restart this backup stage..."))
@@ -335,7 +475,7 @@ def main():
 	config = initialChecks()
 
 	# Change window title
-	programTitle = "FrogBackup v2.0"
+	programTitle = "FrogBackup v2.1"
 	if os.name == "nt":
 		os.system(f"title {programTitle}")
 	else:
@@ -345,7 +485,7 @@ def main():
 	# Initial screen
 	print(
 		"==================================================" "\n\n"
-		"FROGBACKUP v2.0" "\n\n" +
+		"FROGBACKUP v2.1" "\n\n" +
 		_("Welcome to FrogBackup! The utility has loaded, passed\nthe initial checks and is ready to start.") + "\n\n"
 		"==================================================" "\n"
 	)
@@ -359,7 +499,7 @@ def main():
 
 	print(
 		"==================================================" "\n\n"
-		"FROGBACKUP v2.0" "\n\n" +
+		"FROGBACKUP v2.1" "\n\n" +
 		_("The utility is now exiting. Thanks for using FrogBackup!") + "\n\n"
 		"==================================================" "\n"
 	)
@@ -367,4 +507,4 @@ def main():
 	input(_("Press Enter to exit..."))
 
 if __name__ == "__main__":
-    main()
+	main()
