@@ -172,7 +172,7 @@ msgstr "ETAPA 3: Copiando os arquivos para o caminho remoto..."
 
 #: frogbackup.py:312
 msgid "STEP 4: Listing differences between the two latest snapshots..."
-msgstr "ETAPA 4: Listando diferenças entre as dois últimas cópias de estado..."
+msgstr "ETAPA 4: Listando diferenças entre as duas últimas cópias de estado..."
 
 #: frogbackup.py:341
 msgid ""

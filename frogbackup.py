@@ -1,5 +1,6 @@
 import getpass				# Hidden text inputs
 import gettext				# Internationalization
+import json					# JSON support
 import os					# Manage files
 import subprocess			# Run shell commands
 import sys					# System exit
@@ -115,7 +116,7 @@ def backupFiles(config):
 			# Print the configuration
 			print(
 				"==================================================" "\n\n"
-				"FROGBACKUP v2.1 - " + _("Stage") + f" {backupCounter} " + _("of") + f" {backupEntriesNumber}" + "\n\n" +
+				"FROGBACKUP v2.2 - " + _("Stage") + f" {backupCounter} " + _("of") + f" {backupEntriesNumber}" + "\n\n" +
 				_("The utility will now backup") + f" '{backupEntryLine.get('name')}'." "\n" +
 				_("If the data below is correct, you shall proceed.") + "\n\n" +
 				_("LOCAL PATH:") + f" '{backupEntryLine.get('localPath')}'" "\n" +
@@ -337,7 +338,8 @@ def backupFiles(config):
 			listSnapshotsCommand = [
 				"restic",
 				"-r", backupEntryLine.get("remotePath"),
-				"snapshots"
+				"snapshots",
+				"--json"
 			]
 			
 			# If groupBy variable is configured, append it to the command
@@ -353,15 +355,25 @@ def backupFiles(config):
 				text=True
 			)
 
-			# Separate the output of the command in lines, reversed
-			dividedOutput = list(reversed(listSnapshotsOutput.stdout.splitlines()))
+			# Parse the JSON output
+			snapshots = json.loads(listSnapshotsOutput.stdout)
+            # Flatten grouped JSON output when using --group-by
+			if snapshots and isinstance(snapshots[0], dict):
+				if "snapshots" in snapshots[0]:
+					snapshots = [
+						snapshot
+						for group in snapshots
+						for snapshot in group.get("snapshots", [])
+					]
+			snapshots.sort(key=lambda snapshot: snapshot["time"])
 
 			# Check if the repository has only one snapshot - if true, don't compare snapshots
-			if not any(char.isdigit() for char in dividedOutput[3]):
+			if len(snapshots) < 2:
 				print(_("[INFO] The repository contains a single snapshot. Therefore, the utility will not try to compare snapshots."))
 			else:
 				# Get the IDs of the two latest snapshots
-				latestSnapshotID, penultimateSnapshotID = dividedOutput[2][:8], dividedOutput[3][:8]
+				penultimateSnapshotID = snapshots[-2]["id"]
+				latestSnapshotID = snapshots[-1]["id"]
 
 				# Display differences between the two last snapshots
 				lastSnapshotsDiffCommand = [
@@ -475,7 +487,7 @@ def main():
 	config = initialChecks()
 
 	# Change window title
-	programTitle = "FrogBackup v2.1"
+	programTitle = "FrogBackup v2.2"
 	if os.name == "nt":
 		os.system(f"title {programTitle}")
 	else:
@@ -485,7 +497,7 @@ def main():
 	# Initial screen
 	print(
 		"==================================================" "\n\n"
-		"FROGBACKUP v2.1" "\n\n" +
+		"FROGBACKUP v2.2" "\n\n" +
 		_("Welcome to FrogBackup! The utility has loaded, passed\nthe initial checks and is ready to start.") + "\n\n"
 		"==================================================" "\n"
 	)
@@ -499,7 +511,7 @@ def main():
 
 	print(
 		"==================================================" "\n\n"
-		"FROGBACKUP v2.1" "\n\n" +
+		"FROGBACKUP v2.2" "\n\n" +
 		_("The utility is now exiting. Thanks for using FrogBackup!") + "\n\n"
 		"==================================================" "\n"
 	)
